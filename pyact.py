@@ -1,6 +1,5 @@
-from brower import document, window
-from itertools import chain
-from .utils import lmap
+from browser import document, window
+from .utils import lmap, flatten
 import re
 
 # Global Vars
@@ -21,14 +20,14 @@ def createElement(type, props, *children):
                 lambda child: child
                 if isinstance(child, dict)
                 else _createTextElement(child),
-                list(chain.from_iterable(children)),
+                flatten(children),
             ),
         },
     }
 
 
 def _createTextElement(text):
-    return {"type": "TEXT_ELEMENT", "props": {"nodeValue": text, "children": []}}
+    return {"type": "TEXT_ELEMENT", "props": {"textContent": text, "children": []}}
 
 
 def _createDom(fiber):
@@ -47,14 +46,16 @@ def _createDom(fiber):
 
 isEvent = lambda key: key.startswith("on")
 isProperty = lambda key: key != "children" and not isEvent(key)
-isNew = lambda prev, next: lambda key: prev[key] != next[key]
+isNew = lambda prev, next: lambda key: not (
+    key in prev and key in next and prev[key] == next[key]
+)
 isGone = lambda prev, next: lambda key: not (key in next)
 
 
 def _updateDom(dom, prevProps, nextProps):
     # Remove Old or Changed Event Listener
     lmap(
-        lambda name: dom.unbind(name.toLowerCase()[2:], prevProps[name]),
+        lambda name: dom.unbind(name.lower()[2:], prevProps[name]),
         filter(
             lambda key: not (key in nextProps) or isNew(prevProps, nextProps)(key),
             filter(isEvent, prevProps.keys()),
@@ -80,6 +81,9 @@ def _updateDom(dom, prevProps, nextProps):
             if "className" in prevProps:
                 dom.classList.remove(*prevProps["className"].split())
             dom.classList.add(*nextProps["className"].split())
+        elif name == "textContent":
+
+            dom.textContent = nextProps["textContent"]
         else:
             dom.attrs[name] = nextProps[name]
 
@@ -89,6 +93,7 @@ def _updateDom(dom, prevProps, nextProps):
     )
 
     # Add event listeners
+
     lmap(
         lambda name: dom.bind(name.lower()[2:], nextProps[name]),
         filter(isNew(prevProps, nextProps), filter(isEvent, nextProps.keys())),
@@ -106,7 +111,7 @@ def _transformDomStyle(dom, style):
 def _commitRoot():
     global __wipRoot, __deletions, __currentRoot
     lmap(_commitWork, __deletions)
-    _commitWork(__wipRoot["child"])
+    _commitWork("child" in __wipRoot and __wipRoot["child"])
     __currentRoot = __wipRoot
     __wipRoot = None
 
@@ -134,8 +139,8 @@ def _commitWork(fiber):
         _commitDeletion(fiber, domParent)
         return
 
-    _commitWork(fiber["child"])
-    _commitWork(fiber["sibling"])
+    _commitWork("child" in fiber and fiber["child"])
+    _commitWork("sibling" in fiber and fiber["sibling"])
 
 
 def _commitDeletion(fiber, domParent):
@@ -146,25 +151,32 @@ def _commitDeletion(fiber, domParent):
 
 
 def _cancelEffects(fiber):
-    if fiber["hooks"]:
+    if "hooks" in fiber and fiber["hooks"]:
         lmap(
-            lambda effectHook: effectHook.cancel(),
+            lambda effectHook: effectHook["cancel"](),
             filter(
-                lambda hook: hook["tag"] == "effect" and hook["cancel"], fiber["hooks"]
+                lambda hook: "tag" in hook
+                and hook["tag"] == "effect"
+                and hook["cancel"],
+                fiber["hooks"],
             ),
         )
 
 
 def _runEffects(fiber):
-    if fiber["hooks"]:
+    if "hooks" in fiber and fiber["hooks"]:
 
         def __apply_effect(effectHook):
-            effectHook["cancel"] = effectHook.effect()
+            if "effect" in effectHook and callable(effectHook["effect"]):
+                effectHook["cancel"] = effectHook["effect"]()
 
         lmap(
             __apply_effect,
             filter(
-                lambda hook: hook["tag"] == "effect" and hook["effect"], fiber["hooks"]
+                lambda hook: "tag" in hook
+                and hook["tag"] == "effect"
+                and hook["effect"],
+                fiber["hooks"],
             ),
         )
 
@@ -206,23 +218,22 @@ def _performUnitOfWork(fiber):
     Creates a fiber tree in top-down manner
     It starts with root node then goes to child, then to sibling
     """
-
-    isFunctionalComponent = callable(fiber["type"])
+    isFunctionalComponent = "type" in fiber and callable(fiber["type"])
 
     if isFunctionalComponent:
         _updateFunctionComponent(fiber)
     else:
         _updateHostComponent(fiber)
 
-    if fiber["child"]:
+    if "child" in fiber and fiber["child"]:
         return fiber["child"]
 
     nextFiber = fiber
     while nextFiber:
-        if nextFiber["sibling"]:
+        if "sibling" in nextFiber and nextFiber["sibling"]:
             return nextFiber["sibling"]
 
-        nextFiber = nextFiber["parent"]
+        nextFiber = "parent" in nextFiber and nextFiber["parent"]
 
 
 def _updateFunctionComponent(fiber):
@@ -246,21 +257,20 @@ def useState(initial):
 
     hook = {"state": oldHook["state"] if oldHook else initial, "queue": []}
 
-    actions = oldHook["queue"] if oldHook else initial
+    actions = oldHook["queue"] if oldHook else []
 
     for action in actions:
         hook["state"] = action(hook["state"]) if callable(action) else action
 
     def _setState(action):
-        global __wipFiber, __currentRoot, __nextUnitOfWork, __deletions
+        global __wipRoot, __currentRoot, __nextUnitOfWork, __deletions
         hook["queue"].append(action)
-        __wipFiber = {
+        __wipRoot = {
             "dom": __currentRoot["dom"],
             "props": __currentRoot["props"],
             "alternate": __currentRoot,
         }
-
-        __nextUnitOfWork = __wipFiber
+        __nextUnitOfWork = __wipRoot
         __deletions = []
 
     __wipFiber["hooks"].append(hook)
@@ -285,7 +295,7 @@ def useEffect(effect, deps):
         and __wipFiber["alternate"]["hooks"][__hookIndex]
     )
 
-    hasChanged = _hasChangedDeps(oldHook["deps"] if oldHook else None)
+    hasChanged = _hasChangedDeps(oldHook["deps"] if oldHook else None, deps)
 
     hook = {
         "tag": "effect",
@@ -302,17 +312,21 @@ def _updateHostComponent(fiber):
     if not fiber["dom"]:
         fiber["dom"] = _createDom(fiber)
 
-    _reconcileChildren(fiber, list(chain.from_iterable(fiber["props"]["children"])))
+    _reconcileChildren(fiber, flatten(fiber["props"]["children"]))
 
 
 def _reconcileChildren(wipFiber, elements):
     global __deletions
     index = 0
-    oldFiber = wipFiber["alternate"] and wipFiber["alternate"]["child"]
+    oldFiber = (
+        wipFiber["alternate"]
+        and "child" in wipFiber["alternate"]
+        and wipFiber["alternate"]["child"]
+    )
     prevSibling = None
 
     while index < len(elements) or oldFiber:
-        element = elements[index]
+        element = index < len(elements) and elements[index]
         newFiber = None
 
         sameType = oldFiber and element and element["type"] == oldFiber["type"]
@@ -328,6 +342,7 @@ def _reconcileChildren(wipFiber, elements):
             }
 
         if element and not sameType:
+
             newFiber = {
                 "type": element["type"],
                 "props": element["props"],
@@ -340,6 +355,9 @@ def _reconcileChildren(wipFiber, elements):
         if oldFiber and not sameType:
             oldFiber["effectTag"] = "DELETION"
             __deletions.append(oldFiber)
+
+        if oldFiber:
+            oldFiber = "sibling" in oldFiber and oldFiber["sibling"]
 
         if index == 0:
             wipFiber["child"] = newFiber
