@@ -1,6 +1,5 @@
 from browser import document, window
-from .utils import lmap, flatten
-import re
+from .utils import lmap, flatten, transform_attr
 
 # Global Vars
 __nextUnitOfWork = None
@@ -102,10 +101,7 @@ def _updateDom(dom, prevProps, nextProps):
 
 def _transformDomStyle(dom, style):
 
-    dom.style = {
-        re.sub(r"[A-Z]", lambda x: "-" + x.group(0).lower(), k): v
-        for k, v in style.items()
-    }
+    dom.style = {transform_attr(k): v for k, v in style.items()}
 
 
 def _commitRoot():

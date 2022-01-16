@@ -17,3 +17,14 @@ def flatten(list_iterable):
         else:
             res.append(item)
     return res
+
+
+def transform_attr(name):
+    """
+    Transform pascal case attributes to CSS style
+    """
+    res = ""
+    for ch in name:
+        if ch.isupper():
+            res += "-" + ch.lower()
+    return res
