@@ -27,4 +27,6 @@ def transform_attr(name):
     for ch in name:
         if ch.isupper():
             res += "-" + ch.lower()
+        else:
+            res += ch
     return res
