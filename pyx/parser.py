@@ -25,7 +25,7 @@ import re
 WHITESPACE = re.compile(r"\s+")
 EXP1 = re.compile(r"(?m)(\W)(\s+)(\W)")
 EXP2 = re.compile(r"(?m)[\r\n]+")  # to remove all new lines
-CREATE_METHOD = "createElement"
+CREATE_METHOD = "ReactPy.createElement"
 
 
 def replace_whitespaces(text):
@@ -161,6 +161,8 @@ class InlineCode:
     def to_code(self):
         if isinstance(self.code, Dictionary):
             return self.code.to_dict()
+        if isinstance(self.code, TagChildren):
+            return self.code.compose()
         return EscapeString(self.code)
 
     def compose(self):
@@ -296,11 +298,33 @@ class SelfClosingTag:
         return f"{CREATE_METHOD}({tag}, {self.attributes.to_dict()})\n"
 
 
+class TagChildrenInlineCode:
+    """
+    To represent Inline code in PYX syntax
+    """
+
+    grammar = (
+        "{",
+        attr("pre_tag", optional([SelfClosingTag, PairedTag])),
+        attr("code_1", [Dictionary, re.compile(r"[^<}]*")]),
+        attr("mid_tag", optional([SelfClosingTag, PairedTag])),
+        attr("code_2", [Dictionary, re.compile(r"[^<}]*")]),
+        attr("end_tag", optional([SelfClosingTag, PairedTag])),
+        "}",
+    )
+
+    def compose(self):
+        pre_tag = self.pre_tag.compose().strip() if self.pre_tag else ""
+        mid_tag = self.mid_tag.compose().strip() if self.mid_tag else ""
+        end_tag = self.end_tag.compose().strip() if self.end_tag else ""
+        return f"{pre_tag} {self.code_1.to_dict() if isinstance(self.code_1, Dictionary) else self.code_1} {mid_tag} {self.code_2.to_dict() if isinstance(self.code_2, Dictionary) else self.code_2} {end_tag}"
+
+
 class TagChildren(List):
     """Matches valid tag children which can be other tags, plain text, {values} or a mix of all
     three."""
 
-    grammar = maybe_some([SelfClosingTag, PairedTag] + [Text, InlineCode])
+    grammar = maybe_some([SelfClosingTag, PairedTag] + [TagChildrenInlineCode, Text])
 
     def compose(self):
         text = []
@@ -370,7 +394,13 @@ def transform(input_code):
 
 
 if __name__ == "__main__":
-    filename = sys.argv[1]
-    with open(filename, "r") as f:
-        input_code = f.read()
-        print(transform(input_code))
+    # filename = sys.argv[1]
+    # with open(filename, "r") as f:
+    #     input_code = f.read()
+    #     print(transform(input_code))
+    result = parse(
+        """{' '}""",
+        TagChildren,
+        whitespace=None,
+    )
+    print(result.compose())
