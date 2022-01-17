@@ -1,7 +1,6 @@
 import ReactPy
 from browser import document
 
-createElement = ReactPy.createElement
 
 def Counter(props):
     count, setCount = ReactPy.useState(1)
@@ -20,7 +19,7 @@ def Counter(props):
                     "color": "red"
                 }}
             >
-               Count {count}     
+               Count :{count}     
             </h1>
 
 

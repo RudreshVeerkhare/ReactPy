@@ -254,7 +254,7 @@ class PairedTag:
         tag = f'"{self.tag}"'
         if self.tag[0].isupper():
             tag = self.tag
-        return f"{CREATE_METHOD}({tag}, {self.attributes.to_dict()}, {self.children.compose()})\n"
+        return f"{CREATE_METHOD}({tag}, {self.attributes.to_dict()}, {self.children.compose()})"
 
 
 class SelfClosingTag:
@@ -295,7 +295,7 @@ class SelfClosingTag:
         if self.tag[0].isupper():
             tag = self.tag
 
-        return f"{CREATE_METHOD}({tag}, {self.attributes.to_dict()})\n"
+        return f"{CREATE_METHOD}({tag}, {self.attributes.to_dict()})"
 
 
 class TagChildrenInlineCode:
@@ -394,13 +394,7 @@ def transform(input_code):
 
 
 if __name__ == "__main__":
-    # filename = sys.argv[1]
-    # with open(filename, "r") as f:
-    #     input_code = f.read()
-    #     print(transform(input_code))
-    result = parse(
-        """{' '}""",
-        TagChildren,
-        whitespace=None,
-    )
-    print(result.compose())
+    filename = sys.argv[1]
+    with open(filename, "r") as f:
+        input_code = f.read()
+        print(transform(input_code))
