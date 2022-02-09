@@ -1,6 +1,8 @@
 import ReactPy
 from browser import document
 from browser.timer import set_interval, clear_interval
+import '../asset/style.css'
+import "../asset/style.css"
 
 def Timer(props):
     seconds, setSeconds = ReactPy.useState(0)
@@ -33,6 +35,9 @@ def LiveInput(props):
                 <p>{value}</p>
             </div>
 
+def Greet(props):
+    return <h1>Hello,{" "}{props["name"]}</h1>
+
 def Counter(props):
     count, setCount = ReactPy.useState(1)
 
@@ -57,6 +62,7 @@ def App(props):
     visible, setVisible = ReactPy.useState(True)
 
     return  <div>
+                <Greet name="Rudresh"/>
                 <LiveInput/>
                 <Timer/>
                 <button onClick={lambda e: setVisible(True)}>Show</button>

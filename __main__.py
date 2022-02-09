@@ -19,13 +19,15 @@ def main():
         action="store_true",
     )
 
-    parser.add_argument("--build", help="Build a ReactPy project", action="store_true")
+    parser.add_argument(
+        "--build", help="Build a ReactPy project", action="store_true")
 
     parser.add_argument(
         "--serve", help="Start development server", nargs="?", default="absent"
     )
 
-    parser.add_argument("--version", help="ReactPy version", action="store_true")
+    parser.add_argument("--version", help="ReactPy version",
+                        action="store_true")
 
     args = parser.parse_args()
 
@@ -53,7 +55,7 @@ def main():
             if os.path.isdir(path):
                 continue
             try:
-                target_path = path[len(data_path) + 1 :]
+                target_path = path[len(data_path) + 1:]
                 os.makedirs(
                     os.path.dirname(target_path),
                     exist_ok=True,
@@ -113,14 +115,14 @@ def move_public_files(output_folder=SERVE_FOLDER, exclude_list=[]):
         try:
             shutil.copyfile(
                 filepath,
-                output_folder + filepath[len("public") :],
+                output_folder + filepath[len("public"):],
             )
         except shutil.SameFileError:
             print(f"{filepath} has not been moved. Are the same file.")
 
 
 def parse_pyx(output_folder=SERVE_FOLDER):
-    from pyx import parser
+    from .pyx import parser
 
     # get current path
     cwd = os.getcwd()
@@ -133,7 +135,7 @@ def parse_pyx(output_folder=SERVE_FOLDER):
 
         # read file content
         with open(filename, "r") as rf:
-            transformed_code = parser.transform(rf.read())
+            transformed_code, css_files = parser.transform(rf.read())
 
         # write to the file within SERVE_FOLDER folder
         path = os.path.join(cwd, output_folder, filename[4:][:-1])

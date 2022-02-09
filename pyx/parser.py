@@ -4,9 +4,12 @@
 # if matched then replace with appropriate syntax else it'll keep that code as
 # it is without throwing any Syntax errors, those error will come in converted.py file.
 
-## This parser is a modifed version of https://github.com/michaeljones/packed
+# This parser is a modifed version of https://github.com/michaeljones/packed
 
 
+from lib2to3.pgen2 import grammar
+from operator import rshift
+from string import whitespace
 from pypeg2 import (
     List,
     Symbol,
@@ -29,12 +32,64 @@ CREATE_METHOD = "ReactPy.createElement"
 
 
 def replace_whitespaces(text):
+
+    whitespace_re = re.compile(r"\s")
+    non_alpha_re = re.compile(r"\W")
+    alpha_re = re.compile(r"\w")
+
+    def _skip(_i, _text):
+        while _i < len(_text) and whitespace_re.match(_text[_i]):
+            _i += 1
+        return _i
+
+    if len(text) < 2:
+        return text
+
+    result = ""
+    i = j = 0
+
+    text_len = len(text)
+
+    while j < text_len - 1:
+        i = _skip(i, text)
+        j = _skip(i + 1, text)
+
+        result += text[i]
+        # exclude data in strings
+        if text[i] == '"' or text[i] == "'":
+            # reset j
+            j = i + 1
+            # this will throw error if quotes are not properly used
+            while text[i] != text[j]:
+                result += text[j]
+                j += 1
+
+            # to avoid eating space after ending quote
+            # ex. $$className="hello-world" name="something"$$ --> $$className="hello-world"name="something"$$
+            result += text[j]
+            _j = _skip(j + 1, text)
+            if _j != j + 1 and not non_alpha_re.match(text[_j]):
+                result += " "
+            i = _j
+            continue
+
+        if j == i + 1 or (non_alpha_re.match(text[i]) and non_alpha_re.match(text[j])):
+            pass
+        else:
+            result += " "
+        i = j
+
+    return result
+
+
+# OLD REPLACE WHITESPACES --> Wanted to exclude string from parsing so wrote a new function
+def _replace_whitespaces(text):
     """
     Replaces multiple whitespace or newlines or tabs (\s+) with only single
     whitespace if alpha-numeric character surround that group of whitespace
     Ex ->
     Before:: link = <a href = {lambda   x:  get_link()}   >
-                        Click Here
+                        Click{"    "}Here
                     </a>
     After :: link =<a href ={lambda x: get_link()}> Click Here</a>
     """
@@ -75,7 +130,7 @@ def string_difference_transform(text, t_prev, t_next):
     rw = re.compile(r"\s")
 
     def _skip(_i, _text):
-        while rw.match(_text[_i]):
+        while _i < len(_text) and rw.match(_text[_i]):
             _i += 1
         return _i
 
@@ -336,6 +391,33 @@ class TagChildren(List):
         return "".join(text)
 
 
+class CSSFilenameSingleQuote(str):
+    grammar = "'", re.compile("[^']*\.css"), "'"
+
+
+class CSSFilenameDoubleQuote(str):
+    grammar = '"', re.compile('[^"]*\.css'), '"'
+
+
+CSSFilename = [CSSFilenameSingleQuote, CSSFilenameDoubleQuote]
+
+
+class CSSImport:
+    """
+    This pattern is to detect css file import
+    Ex. import '../assets/style.css'
+    """
+
+    grammar = (
+        "import",
+        ignore(WHITESPACE),
+        attr("filename", CSSFilename),
+    )
+
+    def get_filename(self):
+        return self.filename
+
+
 class PYXBlock(List):
     """
     This is the actual PYX code
@@ -375,13 +457,16 @@ class NonPYXLine:
 
 
 class CodeBlock(List):
-    grammar = maybe_some([PYXBlock, NonPYXLine, re.compile(r".+")])
+    grammar = maybe_some([PYXBlock, CSSImport, NonPYXLine, re.compile(r".+")])
+    css_imports = list()
 
     def compose(self, parser, attr_of=None):
         text = []
         for entry in self:
             if isinstance(entry, str):
                 text.append(entry)
+            elif isinstance(entry, CSSImport):
+                self.css_imports.append(entry.get_filename())
             else:
                 text.append(entry.compose())
 
@@ -389,12 +474,15 @@ class CodeBlock(List):
 
 
 def transform(input_code):
+    """
+    Parses given string input and also extracts imported .css files
+    """
     result = parse(input_code, CodeBlock, whitespace=None)
-    return compose(result)
+    return compose(result), CodeBlock.css_imports
 
 
 if __name__ == "__main__":
     filename = sys.argv[1]
     with open(filename, "r") as f:
         input_code = f.read()
-        print(transform(input_code))
+        print(*transform(input_code))

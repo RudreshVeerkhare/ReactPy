@@ -43,12 +43,14 @@ def _createDom(fiber):
 
 # checks
 
-isEvent = lambda key: key.startswith("on")
-isProperty = lambda key: key != "children" and not isEvent(key)
-isNew = lambda prev, next: lambda key: not (
+def isEvent(key): return key.startswith("on")
+def isProperty(key): return key != "children" and not isEvent(key)
+
+
+def isNew(prev, next): return lambda key: not (
     key in prev and key in next and prev[key] == next[key]
 )
-isGone = lambda prev, next: lambda key: not (key in next)
+def isGone(prev, next): return lambda key: not (key in next)
 
 
 def _updateDom(dom, prevProps, nextProps):
@@ -56,7 +58,8 @@ def _updateDom(dom, prevProps, nextProps):
     lmap(
         lambda name: dom.unbind(name.lower()[2:], prevProps[name]),
         filter(
-            lambda key: not (key in nextProps) or isNew(prevProps, nextProps)(key),
+            lambda key: not (key in nextProps) or isNew(
+                prevProps, nextProps)(key),
             filter(isEvent, prevProps.keys()),
         ),
     )
@@ -67,7 +70,8 @@ def _updateDom(dom, prevProps, nextProps):
 
     lmap(
         __reset,
-        filter(isGone(prevProps, nextProps), filter(isProperty, prevProps.keys())),
+        filter(isGone(prevProps, nextProps),
+               filter(isProperty, prevProps.keys())),
     )
 
     # Set New or Changed props
@@ -88,7 +92,8 @@ def _updateDom(dom, prevProps, nextProps):
 
     lmap(
         __set_prop,
-        filter(isNew(prevProps, nextProps), filter(isProperty, nextProps.keys())),
+        filter(isNew(prevProps, nextProps), filter(
+            isProperty, nextProps.keys())),
     )
 
     # Add event listeners
@@ -128,7 +133,8 @@ def _commitWork(fiber):
     elif fiber["effectTag"] == "UPDATE":
         _cancelEffects(fiber)
         if fiber["dom"]:
-            _updateDom(fiber["dom"], fiber["alternate"]["props"], fiber["props"])
+            _updateDom(fiber["dom"], fiber["alternate"]
+                       ["props"], fiber["props"])
         _runEffects(fiber)
     elif fiber["effectTag"] == "DELETION":
         _cancelEffects(fiber)
@@ -153,7 +159,7 @@ def _cancelEffects(fiber):
             filter(
                 lambda hook: "tag" in hook
                 and hook["tag"] == "effect"
-                and hook["cancel"],
+                and hook["cancel"] != None and callable(hook["cancel"]),
                 fiber["hooks"],
             ),
         )
