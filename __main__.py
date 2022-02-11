@@ -1,9 +1,10 @@
 import os
 import shutil
+import os.path as pt
 from argparse import ArgumentParser
 from glob import glob
 from subprocess import run
-
+from . import futils, pyx, html_parser
 from . import __version__, BRYTHON_DEFAULT_VERSION
 
 SERVE_FOLDER = "temp"
@@ -19,15 +20,13 @@ def main():
         action="store_true",
     )
 
-    parser.add_argument(
-        "--build", help="Build a ReactPy project", action="store_true")
+    parser.add_argument("--build", help="Build a ReactPy project", action="store_true")
 
     parser.add_argument(
         "--serve", help="Start development server", nargs="?", default="absent"
     )
 
-    parser.add_argument("--version", help="ReactPy version",
-                        action="store_true")
+    parser.add_argument("--version", help="ReactPy version", action="store_true")
 
     args = parser.parse_args()
 
@@ -49,13 +48,11 @@ def main():
                 print("exiting")
                 sys.exit()
 
-        CWD = os.getcwd()
-
         for path in glob(os.path.join(data_path, "**/**"), recursive=True):
             if os.path.isdir(path):
                 continue
             try:
-                target_path = path[len(data_path) + 1:]
+                target_path = path[len(data_path) + 1 :]
                 os.makedirs(
                     os.path.dirname(target_path),
                     exist_ok=True,
@@ -115,15 +112,20 @@ def move_public_files(output_folder=SERVE_FOLDER, exclude_list=[]):
         try:
             shutil.copyfile(
                 filepath,
-                output_folder + filepath[len("public"):],
+                output_folder + filepath[len("public") :],
             )
         except shutil.SameFileError:
             print(f"{filepath} has not been moved. Are the same file.")
 
+    # edit index.html to include custom_style.css
+    html_filepath = futils.join(output_folder, "index.html")
+    html_content = futils.readfile(html_filepath)
+    futils.writefile(
+        html_filepath, html_parser.link_css_file(html_content, ["custom_style.css"])
+    )
+
 
 def parse_pyx(output_folder=SERVE_FOLDER):
-    from .pyx import parser
-
     # get current path
     cwd = os.getcwd()
 
@@ -134,18 +136,27 @@ def parse_pyx(output_folder=SERVE_FOLDER):
             continue
 
         # read file content
-        with open(filename, "r") as rf:
-            transformed_code, css_files = parser.transform(rf.read())
+        pyx_code = futils.readfile(filename)
+        transformed_code, css_files = pyx.parser.transform(pyx_code)
 
         # write to the file within SERVE_FOLDER folder
-        path = os.path.join(cwd, output_folder, filename[4:][:-1])
+        # path = os.path.join(cwd, output_folder, filename[4:][:-1])
+        py_filename = filename[4:][:-1]  # src/xyz.pyx -> xyz.py
+        path = futils.join(output_folder, py_filename)
 
-        os.makedirs(
-            os.path.dirname(path),
-            exist_ok=True,
-        )
-        with open(path, "w") as wf:
-            wf.write(transformed_code)
+        futils.makedirs(path, dir_from_path=True)
+        futils.writefile(path, transformed_code)
+
+        # append app css to single file -> custom_style.css
+        for css_path in css_files:
+            # normalize path
+            normalized_path = pt.normpath(futils.join("src", css_path))
+            css_content = futils.readfile(normalized_path)
+
+            # append css content to custom_style.css in output_folder
+            futils.writefile(
+                futils.join(output_folder, "custom_style.css"), css_content, mode="a"
+            )
 
 
 if __name__ == "__main__":
