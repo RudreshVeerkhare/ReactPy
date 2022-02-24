@@ -9,6 +9,7 @@ from . import __version__, BRYTHON_DEFAULT_VERSION
 
 SERVE_FOLDER = "temp"
 BUILD_FOLDER = "build"
+PUBLIC_FOLDER = "public"
 
 
 def main():
@@ -21,6 +22,12 @@ def main():
     )
 
     parser.add_argument("--build", help="Build a ReactPy project", action="store_true")
+
+    parser.add_argument(
+        "--refresh",
+        help="Refresh Brython files with latest ReactPy installation",
+        action="store_true",
+    )
 
     parser.add_argument(
         "--serve", help="Start development server", nargs="?", default="absent"
@@ -57,6 +64,25 @@ def main():
                     os.path.dirname(target_path),
                     exist_ok=True,
                 )
+                shutil.copy(path, target_path)
+            except shutil.SameFileError:
+                print(f"{path} has not been moved. Are the same file.")
+
+        print("done")
+
+    if args.refresh:
+
+        print(f"Installing ReactPy {__version__}")
+        print(f"Installing Brython {BRYTHON_DEFAULT_VERSION}")
+
+        data_path = os.path.join(os.path.dirname(__file__), "data", "public")
+        current_path_files = os.listdir(os.getcwd())
+
+        for path in glob(os.path.join(data_path, "**"), recursive=True):
+            if os.path.isdir(path):
+                continue
+            try:
+                target_path = PUBLIC_FOLDER
                 shutil.copy(path, target_path)
             except shutil.SameFileError:
                 print(f"{path} has not been moved. Are the same file.")
@@ -137,7 +163,7 @@ def parse_pyx(output_folder=SERVE_FOLDER):
 
         # read file content
         pyx_code = futils.readfile(filename)
-        transformed_code, css_files = pyx.parser.transform(pyx_code)
+        transformed_code, css_files = pyx.transform(pyx_code)
 
         # write to the file within SERVE_FOLDER folder
         # path = os.path.join(cwd, output_folder, filename[4:][:-1])

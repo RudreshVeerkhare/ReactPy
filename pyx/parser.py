@@ -38,7 +38,7 @@ def replace_whitespaces(text):
     alpha_re = re.compile(r"\w")
 
     def _skip(_i, _text):
-        while _i < len(_text) and whitespace_re.match(_text[_i]):
+        while _i < len(_text) - 1 and whitespace_re.match(_text[_i]):
             _i += 1
         return _i
 
@@ -50,7 +50,7 @@ def replace_whitespaces(text):
 
     text_len = len(text)
 
-    while j < text_len - 1:
+    while j < text_len:
         i = _skip(i, text)
         j = _skip(i + 1, text)
 
@@ -322,7 +322,7 @@ class SelfClosingTag:
         "<",
         attr("tag", Symbol),
         attr("attributes", Attributes),
-        # ignore(WHITESPACE),
+        ignore(re.compile(r"\s*")),
         "/>",
     )
 
@@ -482,7 +482,9 @@ def transform(input_code):
 
 
 if __name__ == "__main__":
-    filename = sys.argv[1]
+    filename = (
+        r"C:\Users\Acer\Desktop\ReactPy\Package\ReactPy\pyx\test.pyx"  # sys.argv[1]
+    )
     with open(filename, "r") as f:
         input_code = f.read()
         print(*transform(input_code))
