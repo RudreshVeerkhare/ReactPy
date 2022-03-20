@@ -28,7 +28,11 @@ def createElement(type, props, *children):
 
 
 def _createTextElement(text):
-    return {"type": "TEXT_ELEMENT", "props": {"textContent": text, "children": []}}
+    return {
+        "type": "TEXT_ELEMENT",
+        "key": None,
+        "props": {"textContent": text, "children": []},
+    }
 
 
 def _createDom(fiber):
@@ -134,7 +138,7 @@ def _commitWork(fiber):
         if fiber["dom"]:
             domParent.appendChild(fiber["dom"])
         _runEffects(fiber)
-    elif fiber["effectTag"] == "UPDATE":
+    elif fiber["effectTag"] == "UPDATE" or fiber["effectTag"] == "RE_ARRANGE":
         _cancelEffects(fiber)
         if fiber["dom"]:
             _updateDom(fiber["dom"], fiber["alternate"]["props"], fiber["props"])
@@ -146,6 +150,21 @@ def _commitWork(fiber):
 
     _commitWork("child" in fiber and fiber["child"])
     _commitWork("sibling" in fiber and fiber["sibling"])
+
+    if fiber["effectTag"] == "RE_ARRANGE":
+        _rearrangeChildren(fiber)
+
+
+def _rearrangeChildren(fiber):
+    parentDom = fiber["dom"]
+    child = fiber["child"]  # temp reference to iterate
+    while child:
+        domNode = child
+        while not domNode["dom"]:
+            domNode = child["child"]
+
+        parentDom.appendChild(domNode["dom"])
+        child = "sibling" in child and child["sibling"]
 
 
 def _commitDeletion(fiber, domParent):
@@ -174,10 +193,6 @@ def _runEffects(fiber):
 
         def __apply_effect(effectHook):
             if "effect" in effectHook and callable(effectHook["effect"]):
-                # # TODO: REMOVE THIS
-                # global __wipRoot, __currentRoot
-                # print("__wipRoot", __wipRoot)
-                # print("__currentRoot", __currentRoot)
                 effectHook["cancel"] = effectHook["effect"]()
 
         lmap(
@@ -213,7 +228,7 @@ def _workLoop(deadline):
         # setState Calls
         if callable(_currFiber):
             if __wipRoot:
-                print("Force Commit Set")
+
                 forceCommit = True
                 continue
             __nextUnitOfWork[0] = __nextUnitOfWork[0]()
@@ -227,7 +242,7 @@ def _workLoop(deadline):
     if forceCommit or (not __nextUnitOfWork and __wipRoot):
         _commitRoot()
         if forceCommit:
-            print("Done Force Commit!")
+
             __nextUnitOfWork[0] = __nextUnitOfWork[0]()
             forceCommit = False
 
@@ -351,45 +366,70 @@ def _updateHostComponent(fiber):
 
 def _reconcileChildren(wipFiber, elements):
     global __deletions
-    index = 0
+
     oldFiber = (
         wipFiber["alternate"]
         and "child" in wipFiber["alternate"]
         and wipFiber["alternate"]["child"]
     )
-    prevSibling = None
 
     # TODO : Add support to "key" attribute
+    # All elements might not have "key" so first I'll compair
+    # elements with keys and then other without keys.
+
+    oldElementsHashMap = dict()  # create a hashmap with "key" as key
+    tempOldFiber = oldFiber  # temp reference to iterate
+    while tempOldFiber:
+        if tempOldFiber["key"] != None:
+            oldElementsHashMap[tempOldFiber["key"]] = tempOldFiber
+
+        tempOldFiber = "sibling" in tempOldFiber and tempOldFiber["sibling"]
+
+    index = 0
+    prevSibling = None
+    domRearrage = False
+
     while index < len(elements) or oldFiber:
         element = index < len(elements) and elements[index]
         newFiber = None
 
-        sameType = oldFiber and element and element["type"] == oldFiber["type"]
+        hasOldKey = element and element["key"] in oldElementsHashMap
+        sameElem = (
+            oldFiber
+            and element
+            and element["type"] == oldFiber["type"]
+            and element["key"] == oldFiber["key"]
+        )
 
-        if sameType:
+        if sameElem or hasOldKey:
+            if not sameElem:
+                domRearrage = True
+            _oldFiberFromKey = oldElementsHashMap.pop(element["key"], oldFiber)
             newFiber = {
-                "type": oldFiber["type"],
+                "type": _oldFiberFromKey["type"],
+                "key": _oldFiberFromKey["key"],
                 "props": element["props"],
-                "dom": oldFiber["dom"],
+                "dom": _oldFiberFromKey["dom"],
                 "parent": wipFiber,
-                "alternate": oldFiber,
+                "alternate": _oldFiberFromKey,
                 "effectTag": "UPDATE",
             }
 
-        if element and not sameType:
+        # delete if no same level match and has no key on oldFiber
+        if hasOldKey and oldFiber and oldFiber["key"] == None:
+            oldFiber["effectTag"] = "DELETION"
+            __deletions.append(oldFiber)
 
+        if element and not (sameElem or hasOldKey):
             newFiber = {
                 "type": element["type"],
+                "key": element["key"],
                 "props": element["props"],
                 "dom": None,
                 "parent": wipFiber,
                 "alternate": None,
                 "effectTag": "PLACEMENT",
             }
-
-        if oldFiber and not sameType:
-            oldFiber["effectTag"] = "DELETION"
-            __deletions.append(oldFiber)
 
         if oldFiber:
             oldFiber = "sibling" in oldFiber and oldFiber["sibling"]
@@ -401,3 +441,12 @@ def _reconcileChildren(wipFiber, elements):
 
         prevSibling = newFiber
         index += 1
+
+    # rearrange dom
+    if domRearrage:
+        wipFiber["effectTag"] = "RE_ARRANGE"
+
+    # all oldFibers left in oldElementsHashMap are to be deleted
+    for _oldFiber in oldElementsHashMap.values():
+        _oldFiber["effectTag"] = "DELETION"
+        __deletions.append(_oldFiber)
