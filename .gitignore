@@ -1,3 +1,6 @@
+# brython zip bundles
+*.zip
+
 # Editors
 .vscode/
 .idea/
