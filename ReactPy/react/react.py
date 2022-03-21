@@ -1,9 +1,8 @@
 from browser import document, window
 from .utils import lmap, flatten, transform_attr
-from collections import deque
 
 # Global Vars
-__nextUnitOfWork = deque([])
+__nextUnitOfWork = list()
 __currentRoot = None
 __wipRoot = None
 __deletions = None
@@ -233,9 +232,9 @@ def _workLoop(deadline):
                 continue
             __nextUnitOfWork[0] = __nextUnitOfWork[0]()
 
-        _nextFiber = _performUnitOfWork(__nextUnitOfWork.popleft())
+        _nextFiber = _performUnitOfWork(__nextUnitOfWork.pop(0))
         if _nextFiber:
-            __nextUnitOfWork.appendleft(_nextFiber)
+            __nextUnitOfWork.insert(0, _nextFiber)
         shouldYield = deadline.timeRemaining() < 1
 
     # commit after whole work tree is complete or when forceCommit flag is True
@@ -373,7 +372,6 @@ def _reconcileChildren(wipFiber, elements):
         and wipFiber["alternate"]["child"]
     )
 
-    # TODO : Add support to "key" attribute
     # All elements might not have "key" so first I'll compair
     # elements with keys and then other without keys.
 

@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 import futils
 
 REACT_FOLDER = "./react/"
-PUBLIC_FOLDER = "./data/public/"
+PUBLIC_FOLDER = "./data/templates/public/"
 parser = ArgumentParser()
 parser.add_argument(
     "--build-react",

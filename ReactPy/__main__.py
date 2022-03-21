@@ -95,7 +95,9 @@ def main():
         print(f"Installing ReactPy {__version__}")
         print(f"Installing Brython {BRYTHON_DEFAULT_VERSION}")
 
-        template_path = os.path.join(os.path.dirname(__file__), "data", "public")
+        template_path = os.path.join(
+            os.path.dirname(__file__), "data", "templates", "public"
+        )
 
         for path in glob(os.path.join(template_path, "**"), recursive=True):
             if os.path.isdir(path):
