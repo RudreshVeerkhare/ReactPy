@@ -227,7 +227,7 @@ def _workLoop(deadline):
         # setState Calls
         if callable(_currFiber):
             if __wipRoot:
-
+                # print("Force Commit!")
                 forceCommit = True
                 continue
             __nextUnitOfWork[0] = __nextUnitOfWork[0]()
@@ -413,8 +413,8 @@ def _reconcileChildren(wipFiber, elements):
                 "effectTag": "UPDATE",
             }
 
-        # delete if no same level match and has no key on oldFiber
-        if hasOldKey and oldFiber and oldFiber["key"] == None:
+        # mark for delete if no same level match and has no key on oldFiber
+        if not sameElem and oldFiber and oldFiber["key"] == None:
             oldFiber["effectTag"] = "DELETION"
             __deletions.append(oldFiber)
 
