@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import os.path as pt
 from argparse import ArgumentParser
@@ -18,7 +19,9 @@ def main():
     parser.add_argument(
         "--init",
         help="Initialize ReactPy in an empty directory with given Brython version",
-        action="store_true",
+        type=str,
+        const=BRYTHON_DEFAULT_VERSION,
+        nargs="?",
     )
 
     parser.add_argument("--build", help="Build a ReactPy project", action="store_true")
@@ -38,28 +41,33 @@ def main():
     args = parser.parse_args()
 
     if args.init:
-
+        brython_version = args.init
         print(f"Installing ReactPy {__version__}")
-        print(f"Installing Brython {BRYTHON_DEFAULT_VERSION}")
+        print(f"Installing Brython {brython_version}")
 
-        data_path = os.path.join(os.path.dirname(__file__), "data")
-        current_path_files = os.listdir(os.getcwd())
+        template_path = os.path.join(os.path.dirname(__file__), "data/templates")
+        brython_bundle_path = os.path.join(
+            os.path.dirname(__file__), "data/brython_bundles"
+        )
 
-        if current_path_files and "brython.js" in current_path_files:
-            override = input(
-                "brython.js is already present in this directory." " Override ? (Y/N)"
+        current_path = os.getcwd()
+        source_zip = futils.join(brython_bundle_path, f"Brython-{brython_version}.zip")
+
+        # download Brython if required version does not exists in data folder
+        if not os.path.isfile(source_zip):
+            status = futils.download_file(
+                f"https://github.com/brython-dev/brython/releases/download/{brython_version}/Brython-{brython_version}.zip",
+                source_zip,
             )
-            if override.lower() != "y":
-                import sys
-
-                print("exiting")
+            if not status:
+                print("Failed to Install!")
                 sys.exit()
 
-        for path in glob(os.path.join(data_path, "**/**"), recursive=True):
+        for path in glob(os.path.join(template_path, "**/**"), recursive=True):
             if os.path.isdir(path):
                 continue
             try:
-                target_path = path[len(data_path) + 1 :]
+                target_path = path[len(template_path) + 1 :]
                 os.makedirs(
                     os.path.dirname(target_path),
                     exist_ok=True,
@@ -68,6 +76,18 @@ def main():
             except shutil.SameFileError:
                 print(f"{path} has not been moved. Are the same file.")
 
+        # extract brython.js and brython_stdlib.js from zip
+        futils.copy_from_zip(
+            source_zip,
+            f"Brython-{brython_version}/brython.js",
+            futils.join(current_path, "public", "brython.js"),
+        )
+        futils.copy_from_zip(
+            source_zip,
+            f"Brython-{brython_version}/brython_stdlib.js",
+            futils.join(current_path, "public", "brython_stdlib.js"),
+        )
+
         print("done")
 
     if args.refresh:
@@ -75,10 +95,9 @@ def main():
         print(f"Installing ReactPy {__version__}")
         print(f"Installing Brython {BRYTHON_DEFAULT_VERSION}")
 
-        data_path = os.path.join(os.path.dirname(__file__), "data", "public")
-        current_path_files = os.listdir(os.getcwd())
+        template_path = os.path.join(os.path.dirname(__file__), "data", "public")
 
-        for path in glob(os.path.join(data_path, "**"), recursive=True):
+        for path in glob(os.path.join(template_path, "**"), recursive=True):
             if os.path.isdir(path):
                 continue
             try:
@@ -91,7 +110,9 @@ def main():
 
     if args.build:
         parse_pyx(output_folder=BUILD_FOLDER)
-        move_public_files(output_folder=BUILD_FOLDER)
+        move_public_files(
+            output_folder=BUILD_FOLDER, brython_module="brython_modules.js"
+        )
 
         # make module using brython
         project_name = os.path.basename(os.getcwd())
@@ -114,7 +135,9 @@ def main():
         def reload_files():
             # parse all .pyx files
             parse_pyx(output_folder=SERVE_FOLDER)
-            move_public_files(output_folder=SERVE_FOLDER)
+            move_public_files(
+                output_folder=SERVE_FOLDER, brython_module="brython_stdlib.js"
+            )
 
         reload_files()
 
@@ -129,7 +152,9 @@ def main():
         print("Brython version:", BRYTHON_DEFAULT_VERSION)
 
 
-def move_public_files(output_folder=SERVE_FOLDER, exclude_list=[]):
+def move_public_files(
+    output_folder=SERVE_FOLDER, exclude_list=[], brython_module="brython_stdlib.js"
+):
     # move .html files from public folder to SERVE_FOLDER
     for filepath in glob("public/**", recursive=True):
         if os.path.isdir(filepath) or os.path.basename(filepath) in exclude_list:
@@ -147,7 +172,11 @@ def move_public_files(output_folder=SERVE_FOLDER, exclude_list=[]):
     html_filepath = futils.join(output_folder, "index.html")
     html_content = futils.readfile(html_filepath)
     futils.writefile(
-        html_filepath, html_parser.link_css_file(html_content, ["custom_style.css"])
+        html_filepath,
+        html_parser.add_brython_modules(
+            html_parser.link_css_file(html_content, ["custom_style.css"]),
+            brython_module,
+        ),
     )
 
 
