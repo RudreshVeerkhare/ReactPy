@@ -205,6 +205,9 @@ def parse_pyx(output_folder=SERVE_FOLDER):
         futils.writefile(path, transformed_code)
 
         # append app css to single file -> custom_style.css
+        # append css content to custom_style.css in output_folder
+        # clear file to avoid appending same thing again
+        futils.writefile(futils.join(output_folder, "custom_style.css"), "", mode="w")
         for css_path in css_files:
             # normalize path
             normalized_path = pt.normpath(futils.join("src", css_path))

@@ -137,7 +137,9 @@ def _commitWork(fiber):
         if fiber["dom"]:
             domParent.appendChild(fiber["dom"])
         _runEffects(fiber)
-    elif fiber["effectTag"] == "UPDATE" or fiber["effectTag"] == "RE_ARRANGE":
+    elif fiber["effectTag"] == "UPDATE" or (
+        fiber["alternate"] != None and fiber["effectTag"] == "RE_ARRANGE"
+    ):
         _cancelEffects(fiber)
         if fiber["dom"]:
             _updateDom(fiber["dom"], fiber["alternate"]["props"], fiber["props"])
@@ -419,6 +421,15 @@ def _reconcileChildren(wipFiber, elements):
             __deletions.append(oldFiber)
 
         if element and not (sameElem or hasOldKey):
+            # placement has to trigger rearrangement
+            # cause we are just appending new child
+            # when PLACEMENT tag is assigned, and
+            # not always it's supposed to be appended
+            # so doing this would require rearrangement.
+            # and this is not required for first render
+            # only in updates
+            if element["key"] != None and oldFiber:
+                domRearrage = True
             newFiber = {
                 "type": element["type"],
                 "key": element["key"],
@@ -448,3 +459,17 @@ def _reconcileChildren(wipFiber, elements):
     for _oldFiber in oldElementsHashMap.values():
         _oldFiber["effectTag"] = "DELETION"
         __deletions.append(_oldFiber)
+
+
+def p(item):
+    """
+    For Debug purposes
+    """
+    if not item:
+        return item
+    return {
+        "type": "type" in item and item["type"],
+        "key": "key" in item and item["key"],
+        "props": "props" in item and item["props"],
+        "dom": "dom" in item and item["dom"] and True,
+    }

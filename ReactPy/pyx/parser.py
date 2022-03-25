@@ -47,7 +47,6 @@ def replace_whitespaces(text):
 
     result = ""
     i = j = 0
-
     text_len = len(text)
 
     while j < text_len:
@@ -56,7 +55,8 @@ def replace_whitespaces(text):
 
         result += text[i]
         # exclude data in strings
-        if text[i] == '"' or text[i] == "'":
+        if (text[i] == '"' or text[i] == "'") and (i == 0 or text[i - 1] != "\\"):
+
             # reset j
             j = i + 1
             # this will throw error if quotes are not properly used
@@ -477,6 +477,7 @@ def transform(input_code):
     """
     Parses given string input and also extracts imported .css files
     """
+    CodeBlock.css_imports = list()
     result = parse(input_code, CodeBlock, whitespace=None)
     return compose(result), CodeBlock.css_imports
 
