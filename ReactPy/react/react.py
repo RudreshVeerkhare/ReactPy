@@ -182,7 +182,7 @@ def _cancelEffects(fiber):
             filter(
                 lambda hook: "tag" in hook
                 and hook["tag"] == "effect"
-                and hook["cancel"] != None
+                and hook["effect"] != None
                 and callable(hook["cancel"]),
                 fiber["hooks"],
             ),
@@ -350,7 +350,7 @@ def useEffect(effect, deps):
     hook = {
         "tag": "effect",
         "effect": effect if hasChanged else None,
-        "cancel": hasChanged and oldHook and oldHook["cancel"],
+        "cancel": oldHook and oldHook["cancel"],
         "deps": deps,
     }
 
