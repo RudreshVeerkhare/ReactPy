@@ -6,6 +6,8 @@
 
 Creating a ReactPy app is very simple and the process in very much inspired from ReactJS.
 
+![Getting Started GIF](./media/ReactPy_installation.gif)
+
 ### Installation
 
 ReactPy has a PyPI package
@@ -73,6 +75,8 @@ element = <Counter/>
 ReactPy.render(element, document.getElementById("root"))
 ```
 
+![Counter Gif](./media/Counter.gif)
+
 ### Timer
 
 ```python
@@ -110,6 +114,8 @@ element = <Timer timelimit={5}/>
 ReactPy.render(element, document.getElementById("root"))
 ```
 
+![Timer GIF](./media/Timer.gif)
+
 ### Live Input
 
 ```python
@@ -128,6 +134,8 @@ def LiveInput(props):
 element = <LiveInput/>
 ReactPy.render(element, document.getElementById("root"))
 ```
+
+![LiveInput GIF](./media/LiveInput.gif)
 
 ### API Call
 
@@ -171,6 +179,8 @@ element = <UserList/>
 print(element)
 ReactPy.render(element, document.getElementById("root"))
 ```
+
+![API Call GIF](./media/API%20Call.gif)
 
 ## Contributions
 
