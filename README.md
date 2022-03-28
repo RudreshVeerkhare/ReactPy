@@ -7,7 +7,7 @@
 Creating a ReactPy app is very simple and the process in very much inspired from ReactJS.
 
 <p align="center">
-  <img src="./media/ReactPy_installation.gif" />
+  <img src="./media/ReactPy_init.gif" />
 </p>
 
 ### Installation
