@@ -64,7 +64,7 @@ import ReactPy
 from browser import document
 
 def Greetings(props):
-	return <h1>Hi, {" " + props["name"]}</h1>
+    return <h1>Hi, {" " + props["name"]}</h1>
 
 element = <Greetings name="World!"/>
 ReactPy.render(element, document.getElementById("root"))
@@ -209,4 +209,4 @@ Check [Contribution.md]() for Detailed Information.
 
 ## Note
 
-This project is still in beta, so if you find any bugs please create raise an issue.
+This project is still in beta, so if you find any bugs please raise an issue.
