@@ -7,7 +7,7 @@
 Creating a ReactPy app is very simple and the process in very much inspired from ReactJS.
 
 <p align="center">
-  <img src="./media/ReactPy_init.gif" />
+  <img src="https://github.com/RudreshVeerkhare/ReactPy/raw/main/media/ReactPy_init.gif" />
 </p>
 
 ### Installation
@@ -89,7 +89,7 @@ ReactPy.render(element, document.getElementById("root"))
 ```
 
 <p align="center">
-  <img src="./media/Counter.gif" />
+  <img src="https://github.com/RudreshVeerkhare/ReactPy/raw/main/media/Counter.gif" />
 </p>
 
 ### Timer
@@ -130,7 +130,7 @@ ReactPy.render(element, document.getElementById("root"))
 ```
 
 <p align="center">
-  <img src="./media/Timer.gif" />
+  <img src="https://github.com/RudreshVeerkhare/ReactPy/raw/main/media/Timer.gif" />
 </p>
 
 ### Live Input
@@ -153,7 +153,7 @@ ReactPy.render(element, document.getElementById("root"))
 ```
 
 <p align="center">
-  <img src="./media/LiveInput.gif" />
+  <img src="https://github.com/RudreshVeerkhare/ReactPy/raw/main/media/LiveInput.gif" />
 </p>
 
 ### API Call
@@ -200,7 +200,7 @@ ReactPy.render(element, document.getElementById("root"))
 ```
 
 <p align="center">
-  <img src="./media/API%20Call.gif" />
+  <img src="https://github.com/RudreshVeerkhare/ReactPy/raw/main/media/API%20Call.gif" />
 </p>
 
 ## Contributions

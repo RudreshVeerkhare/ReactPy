@@ -1,2 +1,2 @@
-__version__ = "1.0.0"
-BRYTHON_DEFAULT_VERSION = "3.10.4"
+__version__ = "0.0.2"
+BRYTHON_DEFAULT_VERSION = "3.10.5"
