@@ -47,6 +47,10 @@ python3 -m ReactPy --build
 
 This will create a `build` directory in project folder. Then this can be very easily deployed to services like [Netlify Drop](https://docs.netlify.com/site-deploys/create-deploys/#drag-and-drop) by uploading `build` folder for deployment.
 
+### Syntax Highlighting
+To get syntax highlighting on`.pyx` files in ReactPy applications, install [ReactPy Syntax Highlighter](https://marketplace.visualstudio.com/items?itemName=RudreshVeerkhare.reactpy) in VSCODE from Visual Studio Marketplace.
+
+
 ## Examples
 
 ### Passing Props
@@ -172,7 +176,7 @@ def UserList(props):
                 {lmap(
                     lambda x: <UserCard name={x["name"]} email={x["email"]} website={x["website"]}/>,
                     users
-                )}
+                ) if len(users) > 0 else <h1>Loading...</h1>}
             </div>
 
 element = <UserList/>
