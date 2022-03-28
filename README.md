@@ -168,7 +168,7 @@ def UserList(props):
                 {lmap(
                     lambda x: <UserCard name={x["name"]} email={x["email"]} website={x["website"]}/>,
                     users
-                )}
+                ) if len(users) > 0 else <h1>Loading...</h1>}
             </div>
 
 element = <UserList/>
