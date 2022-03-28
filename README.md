@@ -6,7 +6,9 @@
 
 Creating a ReactPy app is very simple and the process in very much inspired from ReactJS.
 
-![Getting Started GIF](./media/ReactPy_installation.gif)
+<p align="center">
+  <img src="./media/ReactPy_installation.gif" />
+</p>
 
 ### Installation
 
@@ -48,8 +50,8 @@ python3 -m ReactPy --build
 This will create a `build` directory in project folder. Then this can be very easily deployed to services like [Netlify Drop](https://docs.netlify.com/site-deploys/create-deploys/#drag-and-drop) by uploading `build` folder for deployment.
 
 ### Syntax Highlighting
-To get syntax highlighting on`.pyx` files in ReactPy applications, install [ReactPy Syntax Highlighter](https://marketplace.visualstudio.com/items?itemName=RudreshVeerkhare.reactpy) in VSCODE from Visual Studio Marketplace.
 
+To get syntax highlighting on`.pyx` files in ReactPy applications, install [ReactPy Syntax Highlighter](https://marketplace.visualstudio.com/items?itemName=RudreshVeerkhare.reactpy) in VSCODE from Visual Studio Marketplace.
 
 ## Examples
 
@@ -79,7 +81,9 @@ element = <Counter/>
 ReactPy.render(element, document.getElementById("root"))
 ```
 
-![Counter Gif](./media/Counter.gif)
+<p align="center">
+  <img src="./media/Counter.gif" />
+</p>
 
 ### Timer
 
@@ -118,7 +122,9 @@ element = <Timer timelimit={5}/>
 ReactPy.render(element, document.getElementById("root"))
 ```
 
-![Timer GIF](./media/Timer.gif)
+<p align="center">
+  <img src="./media/Timer.gif" />
+</p>
 
 ### Live Input
 
@@ -139,7 +145,9 @@ element = <LiveInput/>
 ReactPy.render(element, document.getElementById("root"))
 ```
 
-![LiveInput GIF](./media/LiveInput.gif)
+<p align="center">
+  <img src="./media/LiveInput.gif" />
+</p>
 
 ### API Call
 
@@ -184,7 +192,9 @@ print(element)
 ReactPy.render(element, document.getElementById("root"))
 ```
 
-![API Call GIF](./media/API%20Call.gif)
+<p align="center">
+  <img src="./media/API%20Call.gif" />
+</p>
 
 ## Contributions
 
