@@ -75,7 +75,12 @@ import ReactPy
 from browser import document
 
 def Counter(props):
-	return <h1>Hi, {" " + props["name"]}</h1>
+    count, setCount = ReactPy.useState(0)
+    return  <div>
+                <h1>Count :{count}</h1>
+                <button onClick={lambda e: setCount(count + 1)}>+</button>
+                <button onClick={lambda e: setCount(count - 1)}>-</button>
+            </div>
 
 element = <Counter/>
 ReactPy.render(element, document.getElementById("root"))
