@@ -483,9 +483,7 @@ def transform(input_code):
 
 
 if __name__ == "__main__":
-    filename = (
-        r"C:\Users\Acer\Desktop\ReactPy\Package\ReactPy\pyx\test.pyx"  # sys.argv[1]
-    )
+    filename = "test.pyx"  # sys.argv[1]
     with open(filename, "r") as f:
         input_code = f.read()
         print(*transform(input_code))
