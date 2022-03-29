@@ -6,10 +6,6 @@
 
 # This parser is a modifed version of https://github.com/michaeljones/packed
 
-
-from lib2to3.pgen2 import grammar
-from operator import rshift
-from string import whitespace
 from pypeg2 import (
     List,
     Symbol,
